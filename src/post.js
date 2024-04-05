@@ -322,6 +322,36 @@ Module.Highs_readModel = Module["cwrap"]("Highs_readModel", "number", [
   "number",
   "string",
 ]);
+Module.Highs_passModel = Module["cwrap"]("Highs_passModel", "number", [
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+  "number",
+]);
+
+Module._malloc = Module["cwrap"]("malloc", "number", ["number"]);
+Module._free = Module["cwrap"]("free", null, ["number"]);
+
+Module.HEAPF64 = {
+  set: Module["cwrap"]("HEAPF64.set", null, ["number", "number", "number"]),
+};
+
+Module.HEAP32 = {
+  set: Module["cwrap"]("HEAP32.set", null, ["number", "number", "number"]),
+};
+
 const Highs_setIntOptionValue = Module["cwrap"](
   "Highs_setIntOptionValue",
   "number",
@@ -385,14 +415,130 @@ var
  * @returns {import("../types").HighsSolution} The solution
  */
 Module["solve"] = function (model_str, highs_options, file_format = "lp") {
-  const MODEL_FILENAME = file_format == "mps" ? "m.mps" : "m.lp";
+  const model = modelFromMps(model_str);
 
-  FS.writeFile(MODEL_FILENAME, model_str);
+  const {
+    name,
+    direction,
+    objective,
+    constraints,
+    variables,
+    bounds,
+    integers,
+    binaries,
+  } = model;
+
+  const num_col = variables.size;
+  const num_row = constraints.size;
+  let num_nz = 0;
+  const col_cost = new Array(num_col).fill(0);
+  const col_lower = new Array(num_col).fill(0);
+  const col_upper = new Array(num_col).fill(Infinity);
+  const row_lower = new Array(num_row).fill(-Infinity);
+  const row_upper = new Array(num_row).fill(Infinity);
+  const a_start = [0];
+  const a_index = [];
+  const a_value = [];
+  const integrality = new Array(num_col).fill(0);
+
+  // Set objective coefficients
+  if (objective) {
+    const objIndex = Array.from(constraints.keys()).indexOf(objective);
+    if (objIndex !== -1) {
+      const objConstraint = constraints.get(objective);
+      if (objConstraint) {
+        row_lower[objIndex] = objConstraint[0];
+        row_upper[objIndex] = objConstraint[1];
+      }
+    }
+  }
+
+  // Set constraint bounds
+  for (const [name, [lower, upper]] of constraints.entries()) {
+    const index = Array.from(constraints.keys()).indexOf(name);
+    row_lower[index] = lower;
+    row_upper[index] = upper;
+  }
+
+  // Set variable bounds and integrality
+  let varIndex = 0;
+  for (const [name, variable] of variables.entries()) {
+    for (const [constraintName, value] of variable.entries()) {
+      const conIndex = Array.from(constraints.keys()).indexOf(constraintName);
+      a_index.push(conIndex);
+      a_value.push(value);
+      num_nz++;
+    }
+    a_start.push(num_nz);
+
+    const [lower, upper] = bounds.get(name) || [0, Infinity];
+    col_lower[varIndex] = lower;
+    col_upper[varIndex] = upper;
+
+    if (integers.has(name)) {
+      integrality[varIndex] = 1;
+    } else if (binaries.has(name)) {
+      integrality[varIndex] = 2;
+    }
+
+    varIndex++;
+  }
+
   const highs = _Highs_create();
+
+  const col_cost_ptr = Module._malloc(num_col * Float64Array.BYTES_PER_ELEMENT);
+  const col_lower_ptr = Module._malloc(num_col * Float64Array.BYTES_PER_ELEMENT);
+  const col_upper_ptr = Module._malloc(num_col * Float64Array.BYTES_PER_ELEMENT);
+  const row_lower_ptr = Module._malloc(num_row * Float64Array.BYTES_PER_ELEMENT);
+  const row_upper_ptr = Module._malloc(num_row * Float64Array.BYTES_PER_ELEMENT);
+  const a_start_ptr = Module._malloc((num_col + 1) * Int32Array.BYTES_PER_ELEMENT);
+  const a_index_ptr = Module._malloc(num_nz * Int32Array.BYTES_PER_ELEMENT);
+  const a_value_ptr = Module._malloc(num_nz * Float64Array.BYTES_PER_ELEMENT);
+  const integrality_ptr = Module._malloc(num_col * Int32Array.BYTES_PER_ELEMENT);
+
+  Module.HEAPF64.set(col_cost, col_cost_ptr / Float64Array.BYTES_PER_ELEMENT);
+  Module.HEAPF64.set(col_lower, col_lower_ptr / Float64Array.BYTES_PER_ELEMENT);
+  Module.HEAPF64.set(col_upper, col_upper_ptr / Float64Array.BYTES_PER_ELEMENT);
+  Module.HEAPF64.set(row_lower, row_lower_ptr / Float64Array.BYTES_PER_ELEMENT);
+  Module.HEAPF64.set(row_upper, row_upper_ptr / Float64Array.BYTES_PER_ELEMENT);
+  Module.HEAP32.set(a_start, a_start_ptr / Int32Array.BYTES_PER_ELEMENT);
+  Module.HEAP32.set(a_index, a_index_ptr / Int32Array.BYTES_PER_ELEMENT);
+  Module.HEAPF64.set(a_value, a_value_ptr / Float64Array.BYTES_PER_ELEMENT);
+  Module.HEAP32.set(integrality, integrality_ptr / Int32Array.BYTES_PER_ELEMENT);
+
+
   assert_ok(
-    () => Module.Highs_readModel(highs, MODEL_FILENAME),
-    "read LP model (see http://web.mit.edu/lpsolve/doc/CPLEX-format.htm)"
+    () => Module.Highs_passModel(
+      highs,
+      num_col,
+      num_row,
+      num_nz,
+      0, // a_format (assuming column-wise format)
+      direction === 'minimize' ? 1 : -1, // sense
+      0, // offset
+      col_cost_ptr,
+      col_lower_ptr,
+      col_upper_ptr,
+      row_lower_ptr,
+      row_upper_ptr,
+      a_start_ptr,
+      a_index_ptr,
+      a_value_ptr,
+      integrality_ptr
+    ),
+    "pass LP model data"
   );
+
+  Module._free(col_cost_ptr);
+  Module._free(col_lower_ptr);
+  Module._free(col_upper_ptr);
+  Module._free(row_lower_ptr);
+  Module._free(row_upper_ptr);
+  Module._free(a_start_ptr);
+  Module._free(a_index_ptr);
+  Module._free(a_value_ptr);
+  Module._free(integrality_ptr);
+
   const options = highs_options || {};
   for (const option_name in options) {
     const option_value = options[option_name];

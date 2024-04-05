@@ -1,5 +1,3 @@
-const MODEL_FILENAME = "m.lp";
-
 Module.Highs_readModel = Module["cwrap"]("Highs_readModel", "number", [
   "number",
   "string",
@@ -60,12 +58,15 @@ var
 /** @type {any}*/ FS;
 
 /**
- * Solve a model in the CPLEX LP file format.
- * @param {string} model_str The problem to solve in the .lp format
+ * Solve a model in the CPLEX LP or MPS file format.
+ * @param {string} model_str The problem to solve in the .lp or .mps format
  * @param {undefined | import("../types").HighsOptions} highs_options Options to pass the solver. See https://github.com/ERGO-Code/HiGHS/blob/c70854d/src/lp_data/HighsOptions.h
+ * @param {('lp' | 'mps')} [file_format='lp'] The file format of the input model
  * @returns {import("../types").HighsSolution} The solution
  */
-Module["solve"] = function (model_str, highs_options) {
+Module["solve"] = function (model_str, highs_options, file_format = "lp") {
+  const MODEL_FILENAME = file_format == "mps" ? "m.mps" : "m.lp";
+
   FS.writeFile(MODEL_FILENAME, model_str);
   const highs = _Highs_create();
   assert_ok(

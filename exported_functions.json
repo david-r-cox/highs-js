@@ -1,6 +1,7 @@
 [
   "_Highs_call",
   "_Highs_readModel",
+  "_Highs_passModel",
   "_Highs_writeSolution",
   "_Highs_writeSolutionPretty",
   "_Highs_create",
@@ -10,5 +11,7 @@
   "_Highs_setStringOptionValue",
   "_Highs_setIntOptionValue",
   "_Highs_setDoubleOptionValue",
-  "_Highs_setBoolOptionValue"
+  "_Highs_setBoolOptionValue",
+  "_malloc",
+  "_free"
 ]

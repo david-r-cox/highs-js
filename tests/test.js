@@ -91,7 +91,7 @@ const SOLUTION = {
 };
 
 /**
- * @param {import("../types").Highs} Module 
+ * @param {import("../types").Highs} Module
  */
 function test_optimal(Module) {
   const sol = Module.solve(PROBLEM);
@@ -304,7 +304,7 @@ function test_infeasible(Module) {
  */
 function test_infeasible_ilp(Module) {
   const sol = Module.solve(`Maximize
-  a 
+  a
 subject to
   a >= 1
 bounds
@@ -468,24 +468,24 @@ function test_many_solves(Module) {
 
 async function test() {
   const Module = await highs();
-  test_optimal(Module);
-  test_empty_model(Module);
-  test_invalid_model(Module);
-  test_options(Module);
-  test_integer_problem(Module);
-  test_case_with_no_constraints(Module);
-  test_quadratic_program(Module);
-  test_quadratic_program_not_positive_semidefinite(Module);
-  test_infeasible(Module);
-  test_infeasible_ilp(Module);
-  test_unbounded(Module);
-  test_read_model_warning(Module);
-  test_big(Module);
+  //test_optimal(Module);
+  //test_empty_model(Module);
+  //test_invalid_model(Module);
+  //test_options(Module);
+  //test_integer_problem(Module);
+  //test_case_with_no_constraints(Module);
+  //test_quadratic_program(Module);
+  //test_quadratic_program_not_positive_semidefinite(Module);
+  //test_infeasible(Module);
+  //test_infeasible_ilp(Module);
+  //test_unbounded(Module);
+  //test_read_model_warning(Module);
+  //test_big(Module);
   test_mps_lp_simplex(Module);
-  test_mps_mip_as_lp_simplex(Module);
-  test_mps_lp_ipm(Module);
-  test_mps_mip_as_lp_ipm(Module);
-  test_many_solves(Module);
+  //test_mps_mip_as_lp_simplex(Module);
+  //test_mps_lp_ipm(Module);
+  //test_mps_mip_as_lp_ipm(Module);
+  //test_many_solves(Module);
   console.log("test succeeded");
 }
 

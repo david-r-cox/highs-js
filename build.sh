@@ -20,9 +20,9 @@ emmake make -j$(nproc) libhighs
 # here as well.
 # [-Ox] represents build optimisations (discussed in the next section).
 export EMCC_CLOSURE_ARGS="--jscomp_off=checkTypes"
-emcc -O3 \
+emcc -O3 -g3 --minify 0 --closure 0 -s NO_FILESYSTEM=1\
 	-s EXPORTED_FUNCTIONS="@$root/exported_functions.json" \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS="['cwrap']" \
+  -s EXPORTED_RUNTIME_METHODS="['ccall', 'cwrap', 'getValue', 'setValue', 'HEAPF64', 'HEAPF32']" \
 	-s MODULARIZE=1 \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-flto \

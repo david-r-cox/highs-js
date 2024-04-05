@@ -445,7 +445,7 @@ const known_columns = {
 };
 
 /**
- * @param {string} s 
+ * @param {string} s
  * @returns {string[]} The values (words) of a line
  */
 function lineValues(s) {
@@ -453,9 +453,9 @@ function lineValues(s) {
 }
 
 /**
- * 
- * @param {string[]} headers 
- * @param {string} line 
+ *
+ * @param {string[]} headers
+ * @param {string} line
  * @returns {Record<string, string | number>}
  */
 function lineToObj(headers, line) {
@@ -533,7 +533,7 @@ function assert_ok(fn, action) {
   } catch (e) {
     err = e;
   }
-  // Allow HighsStatus::kOk (0) and HighsStatus::kWarning (1) but 
+  // Allow HighsStatus::kOk (0) and HighsStatus::kWarning (1) but
   // disallow other values, such as e.g. HighsStatus::kError (-1).
   if (err !== 0 && err !== 1)
     throw new Error("Unable to " + action + ". HiGHS error " + err);

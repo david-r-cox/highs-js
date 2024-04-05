@@ -419,6 +419,42 @@ function test_big(Module) {
   Module.solve(pb);
 }
 
+/**
+ * @param {import("../types").Highs} Module
+ */
+function test_mps_lp_simplex(Module) {
+  const pb = fs.readFileSync(__dirname + "/adlittle.mps");
+  const sol = Module.solve(pb, {"solver": "simplex"}, "mps");
+  assert.equal(Math.round(sol.ObjectiveValue), 225495);
+}
+
+/**
+ * @param {import("../types").Highs} Module
+ */
+function test_mps_lp_ipm(Module) {
+  const pb = fs.readFileSync(__dirname + "/adlittle.mps");
+  const sol = Module.solve(pb, {"solver": "ipm"}, "mps");
+  assert.equal(Math.round(sol.ObjectiveValue), 225495);
+}
+
+/**
+ * @param {import("../types").Highs} Module
+ */
+function test_mps_mip_as_lp_simplex(Module) {
+  const pb = fs.readFileSync(__dirname + "/10teams.mps");
+  const sol = Module.solve(pb, {"solver": "simplex"}, "mps");
+  assert.equal(Math.round(sol.ObjectiveValue), 917);
+}
+
+/**
+ * @param {import("../types").Highs} Module
+ */
+function test_mps_mip_as_lp_ipm(Module) {
+  const pb = fs.readFileSync(__dirname + "/10teams.mps");
+  const sol = Module.solve(pb, {"solver": "ipm"}, "mps");
+  assert.equal(Math.round(sol.ObjectiveValue), 917);
+}
+
 function test_many_solves(Module) {
   // See https://github.com/lovasoa/highs-js/issues/10
   for (let i = 0; i < 5000; i++) {
@@ -445,6 +481,10 @@ async function test() {
   test_unbounded(Module);
   test_read_model_warning(Module);
   test_big(Module);
+  test_mps_lp_simplex(Module);
+  test_mps_mip_as_lp_simplex(Module);
+  test_mps_lp_ipm(Module);
+  test_mps_mip_as_lp_ipm(Module);
   test_many_solves(Module);
   console.log("test succeeded");
 }
